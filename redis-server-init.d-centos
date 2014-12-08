@@ -33,8 +33,6 @@ do_start() {
     [ -f $CONF ] || exit 6
     echo -n $"Starting $PROGRAM: "
     mkdir -p /var/run/redis
-    # commented chown ${REDIS_USER-redis}:${REDIS_USER-redis} /var/run/redis
-    # commented daemon --user ${REDIS_USER-redis} "$redis $REDIS_CONF_FILE $REDIS_OPTIONS"
     daemon "$EXEC $CONF"
     retval=$?
     echo

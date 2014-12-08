@@ -1,0 +1,85 @@
+#!/bin/sh
+#
+# redis - this script starts and stops the redis-server daemon
+#
+# chkconfig:   - 85 15 
+# description:  Redis is a persistent key-value database
+# processname: redis-server
+# config:      /etc/redis/redis.conf
+# config:      /etc/sysconfig/redis
+# pidfile:     /var/run/redis/redis.pid
+ 
+# Source function library.
+. /etc/rc.d/init.d/functions
+ 
+# Source networking configuration.
+. /etc/sysconfig/network
+ 
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+ 
+REDISPORT=9000
+EXEC=/opt/redis/src/redis-server
+CONF="/etc/redis/${REDISPORT}.conf"
+PIDFILE=/var/run/redis.${REDISPORT}.pid # PIDFILE should be identical to "pidfile" of redis config file.
+PROGRAM=$(basename $EXEC)
+
+[ -f /etc/sysconfig/redis ] && . /etc/sysconfig/redis
+ 
+lockfile=/var/lock/subsys/redis
+ 
+do_start() {
+    [ -x $EXEC ] || exit 5
+    [ -f $CONF ] || exit 6
+    echo -n $"Starting $PROGRAM: "
+    mkdir -p /var/run/redis
+    # commented chown ${REDIS_USER-redis}:${REDIS_USER-redis} /var/run/redis
+    # commented daemon --user ${REDIS_USER-redis} "$redis $REDIS_CONF_FILE $REDIS_OPTIONS"
+    daemon "$EXEC $CONF"
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $lockfile
+    return $retval
+}
+
+do_stop() {
+    echo -n $"Stopping $PROGRAM: "
+    killproc -p "$PIDFILE" $PROGRAM
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+}
+ 
+do_restart() {
+    do_stop
+    do_start
+}
+ 
+rh_status() {
+    status -p "$PIDFILE" $EXEC
+}
+ 
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+ 
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        do_start
+        ;;
+    stop)
+        rh_status_q || exit 0
+        do_stop
+        ;;
+    restart)
+        do_restart
+        ;;
+    status)
+        rh_status
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
